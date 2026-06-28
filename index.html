@@ -1,0 +1,887 @@
+<!-- Copyright © 2026 jotarou.com. All rights reserved. Unauthorized copying or commercial use is prohibited. -->
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git 命令生成器 | jotarou.com</title>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f0e8;--bg-card:#ede7dc;--bg-in:#faf7f3;
+  --tx:#2c1f0e;--tx-m:#7a6a54;--tx-l:#b8a89a;
+  --ac:#d4622a;--ac-h:#b8511f;--ac-bg:rgba(212,98,42,.12);
+  --bd:#d4c5ae;--bd-l:#e8dece;
+  --ok:#4a7c59;--ok-bg:rgba(74,124,89,.1);
+  --warn:#d97706;--warn-bg:rgba(217,119,6,.1);
+  --err:#c0392b;--err-bg:rgba(192,57,43,.1);
+  --crit:#7a1212;--crit-bg:rgba(122,18,18,.12);
+  --r:10px;--rs:6px;
+}
+[data-theme=dark]{
+  --bg:#1a1209;--bg-card:#241a0d;--bg-in:#201508;
+  --tx:#e8dece;--tx-m:#a89070;--tx-l:#786050;
+  --ac:#e07040;--ac-h:#c85e30;--ac-bg:rgba(224,112,64,.15);
+  --bd:#3d2e18;--bd-l:#2e2010;
+  --ok:#5a9c70;--ok-bg:rgba(90,156,112,.15);
+  --warn:#f59e0b;--warn-bg:rgba(245,158,11,.12);
+  --err:#e05040;--err-bg:rgba(224,80,64,.12);
+  --crit:#ff5050;--crit-bg:rgba(255,80,80,.18);
+}
+body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;font-size:15px;line-height:1.65;min-height:100vh}
+a{color:var(--ac);text-decoration:none}
+code,.mono{font-family:'SF Mono',Consolas,Monaco,'Courier New',monospace}
+
+/* Header */
+.hdr{background:var(--bg-card);border-bottom:1px solid var(--bd);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.hdr-l{display:flex;align-items:center;gap:12px}
+.h-back{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--rs);background:var(--bg);color:var(--tx-m);border:1px solid var(--bd);font-size:17px;transition:.15s}
+.h-back:hover{background:var(--ac-bg);color:var(--ac);border-color:var(--ac)}
+.hdr-title{font-size:15px;font-weight:700}
+.hdr-sub{font-size:11px;color:var(--tx-m);margin-top:1px}
+.hdr-r{display:flex;gap:8px;position:relative}
+.icon-btn{width:32px;height:32px;border-radius:var(--rs);background:var(--bg);border:1px solid var(--bd);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:.15s;color:var(--tx-m)}
+.icon-btn:hover{background:var(--ac-bg);border-color:var(--ac)}
+.icon-btn.has-key{color:var(--ok);border-color:var(--ok)}
+
+/* Key popover */
+.key-pop{position:absolute;top:42px;right:0;width:300px;background:var(--bg-card);border:1px solid var(--bd);border-radius:var(--r);padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:300;display:none}
+.key-pop.show{display:block}
+.key-pop-title{font-size:13px;font-weight:700;margin-bottom:10px}
+.key-wrap{display:flex;gap:6px}
+.key-wrap input{flex:1}
+.key-eye{width:38px;background:var(--bg-in);border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;color:var(--tx-m)}
+.key-link{font-size:12px;display:inline-block;margin-top:4px}
+
+/* Layout */
+.main{max-width:1280px;margin:0 auto;padding:22px 18px 60px}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--bd)}
+.tab-btn{padding:10px 18px;font-size:14px;font-weight:600;color:var(--tx-m);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:.15s}
+.tab-btn.active{color:var(--ac);border-bottom-color:var(--ac)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* Card */
+.card{background:var(--bg-card);border:1px solid var(--bd);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.card-title .opt{color:var(--tx-m);font-size:11px;font-weight:400}
+
+/* Form */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;color:var(--tx-m);margin-bottom:5px}
+.fg input,.fg textarea,.fg select{width:100%;background:var(--bg-in);border:1px solid var(--bd);border-radius:var(--rs);padding:9px 11px;font-size:14px;color:var(--tx);font-family:inherit;outline:none;transition:.15s}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--ac)}
+.fg input.mono{font-family:'SF Mono',Consolas,Monaco,monospace}
+.fg textarea{resize:vertical;min-height:64px;line-height:1.5}
+
+/* Buttons */
+.btn-pri{background:var(--ac);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+.btn-pri:hover{background:var(--ac-h)}
+.btn-pri:disabled{opacity:.5;cursor:not-allowed}
+.btn-copy{background:var(--bg-in);color:var(--tx-m);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 14px;font-size:12.5px;cursor:pointer;transition:.15s}
+.btn-copy:hover{border-color:var(--ac);color:var(--ac)}
+.btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+/* Scenario quick-fill tags */
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tag{padding:6px 13px;border-radius:999px;background:var(--bg-in);border:1px solid var(--bd);font-size:12.5px;cursor:pointer;color:var(--tx-m);transition:.15s;white-space:nowrap}
+.tag:hover{border-color:var(--ac);color:var(--ac)}
+.tag.active{background:var(--ac-bg);border-color:var(--ac);color:var(--ac);font-weight:600}
+
+/* 状态假设开关 - 核心交互组件 */
+.ctx-toggles{display:flex;flex-direction:column;gap:8px;background:var(--bg-in);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px}
+.ctx-toggle-row{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+.ctx-toggle-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--ac);cursor:pointer;flex-shrink:0}
+.ctx-toggle-row .lbl{font-size:13px;color:var(--tx)}
+.ctx-toggle-row .lbl b{color:var(--ac)}
+
+/* 风险等级标签 + 卡片 */
+.risk-badge{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;letter-spacing:.02em;white-space:nowrap}
+.risk-safe{background:var(--ok-bg);color:var(--ok)}
+.risk-warn{background:var(--warn-bg);color:var(--warn)}
+.risk-danger{background:var(--err-bg);color:var(--err)}
+.risk-critical{background:var(--crit-bg);color:var(--crit);box-shadow:0 0 0 1px var(--crit) inset}
+
+.intent-cards{display:flex;flex-direction:column;gap:10px}
+.intent-card{background:var(--bg-in);border:1.5px solid var(--bd);border-radius:var(--rs);padding:14px}
+.intent-card.risk-safe{border-color:rgba(74,124,89,.35)}
+.intent-card.risk-warn{border-color:rgba(217,119,6,.4)}
+.intent-card.risk-danger{border-color:rgba(192,57,43,.45)}
+.intent-card.risk-critical{border-color:var(--crit);background:var(--crit-bg)}
+.intent-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.intent-card-title{font-size:13px;font-weight:700}
+.cmd-line{font-family:'SF Mono',Consolas,Monaco,monospace;font-size:14px;background:var(--bg);border:1px solid var(--bd-l);border-radius:var(--rs);padding:9px 11px;margin-bottom:8px;word-break:break-all;line-height:1.6;position:relative}
+.cmd-line .danger-tok{color:var(--err);font-weight:700;background:rgba(192,57,43,.12);border-radius:3px;padding:0 2px}
+.intent-card.risk-critical .cmd-line .danger-tok{color:var(--crit);background:rgba(122,18,18,.18)}
+.intent-explain{font-size:12.5px;color:var(--tx-m);line-height:1.6;margin-bottom:8px}
+.escalate-note{font-size:12px;color:var(--crit);background:var(--crit-bg);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px;font-weight:600;line-height:1.5}
+.safer-alt{font-size:12px;background:var(--ok-bg);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px;line-height:1.6}
+.safer-alt b{color:var(--ok)}
+.compat-badge{font-size:10px;color:var(--tx-l);border:1px solid var(--bd);border-radius:4px;padding:1px 6px;margin-left:6px}
+.intent-card-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+/* Tab2: 场景速查 + 模糊搜索 */
+.search-row{position:sticky;top:68px;z-index:50;margin-bottom:14px}
+.search-row input{width:100%;background:var(--bg-card);border:1.5px solid var(--bd);border-radius:999px;padding:11px 18px;font-size:14px;color:var(--tx);outline:none;transition:.15s;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.search-row input:focus{border-color:var(--ac)}
+.scene-group{margin-bottom:18px}
+.scene-group-title{font-size:12px;font-weight:700;color:var(--tx-m);margin-bottom:8px;padding-left:2px;letter-spacing:.03em}
+.scene-item{background:var(--bg-card);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px}
+.scene-item .cmd-line{margin-bottom:6px}
+.scene-item .desc{font-size:12.5px;color:var(--tx-m);line-height:1.5}
+.scene-item-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.scene-hidden{display:none}
+
+/* Tab3: 风险检测器 */
+.detect-result{margin-top:14px}
+.replace-btn{background:var(--ok-bg);color:var(--ok);border:1px solid rgba(74,124,89,.3);border-radius:var(--rs);padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;transition:.15s}
+.replace-btn:hover{background:var(--ok);color:#fff}
+
+.empty-hint{color:var(--tx-l);font-size:13px;text-align:center;padding:30px 10px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px}
+.dialect-hint{font-size:11.5px;color:var(--tx-m);background:var(--bg-in);border-radius:var(--rs);padding:8px 10px;margin-top:8px;line-height:1.5}
+.dim-note{font-size:11px;color:var(--tx-l);margin-top:6px}
+.key-missing-hint{font-size:12px;color:var(--warn);background:var(--warn-bg);border-radius:var(--rs);padding:8px 10px;margin-top:8px;cursor:pointer;display:none}
+.key-missing-hint.show{display:block}
+.err-hint{font-size:12.5px;color:var(--err);background:var(--err-bg);border-radius:var(--rs);padding:9px 11px;margin-top:8px;line-height:1.5}
+.stream-box{background:var(--bg-in);border:1px solid var(--bd-l);border-radius:var(--rs);padding:12px;font-size:13px;color:var(--tx-m);min-height:40px;white-space:pre-wrap;font-family:monospace}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--tx);color:var(--bg);padding:10px 20px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+footer{text-align:center;padding:18px 14px 26px;font-size:12px;color:var(--tx-m);line-height:1.7}
+.badge-ai{display:inline-block;font-size:10.5px;background:var(--ac-bg);color:var(--ac);padding:2px 8px;border-radius:999px;font-weight:600;margin-left:6px}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-l">
+    <a href="/tools/" class="h-back" title="工具列表">&#x229E;</a>
+    <div>
+      <div class="hdr-title">🔀 Git 命令生成器<span class="badge-ai">AI 增强</span></div>
+      <div class="hdr-sub">中文描述生成命令 · 高频场景速查 · 本地风险检测</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <button class="icon-btn" id="keyBtn" onclick="toggleKeyPop()" title="API Key设置">🔑</button>
+    <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="切换主题">🌙</button>
+    <div class="key-pop" id="keyPop">
+      <div class="key-pop-title">API Key</div>
+      <div class="fg">
+        <label>在 jotarou.com 注册获取（仅用于AI生成；场景速查与风险检测无需Key）</label>
+        <div class="key-wrap">
+          <input type="password" id="apiKey" placeholder="sk-xxxx...">
+          <button class="key-eye" onclick="toggleKeyVis()">👁</button>
+        </div>
+        <a class="key-link" href="https://jotarou.com" target="_blank">→ 前往 jotarou.com 获取 Key</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="gen" onclick="switchTab('gen')">描述生成</button>
+    <button class="tab-btn" data-tab="lookup" onclick="switchTab('lookup')">场景速查</button>
+    <button class="tab-btn" data-tab="detect" onclick="switchTab('detect')">风险检测</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-gen">
+
+    <div class="card">
+      <div class="card-title">描述你想做的操作</div>
+      <div class="tag-row" id="scenarioTags"></div>
+      <div class="fg">
+        <textarea id="descInput" placeholder="例如：把最近3次commit合并成一个&#10;例如：撤销刚才的commit但保留修改"></textarea>
+      </div>
+
+      <div class="ctx-toggles" id="ctxTogglesGen"></div>
+
+      <button class="btn-pri" id="genBtn" onclick="generateCommand()">生成命令</button>
+      <div class="key-missing-hint" id="keyMissingHint" onclick="toggleKeyPop()">还没填 API Key，点此设置 →</div>
+    </div>
+
+    <div class="card">
+      <div class="panel-head"><span>生成结果</span><span class="opt" id="genStatus"></span></div>
+      <div id="genResultArea"><div class="empty-hint">描述你的需求并点击"生成命令"，AI 可能给出多个候选方案供你选择</div></div>
+    </div>
+
+  </div>
+
+  <div class="tab-panel" id="panel-lookup">
+
+    <div class="search-row">
+      <input type="text" id="sceneSearch" placeholder="搜索场景，如「回退」「amend」「分支」...">
+    </div>
+
+    <div id="sceneGroups"></div>
+
+  </div>
+
+  <div class="tab-panel" id="panel-detect">
+
+    <div class="card">
+      <div class="card-title">粘贴要检测的命令</div>
+      <div class="fg">
+        <input type="text" id="detectInput" class="mono" placeholder="例如 git push --force origin main">
+      </div>
+
+      <div class="ctx-toggles" id="ctxTogglesDetect"></div>
+    </div>
+
+    <div class="card">
+      <div class="panel-head"><span>检测结果</span></div>
+      <div id="detectResultArea"><div class="empty-hint">输入命令后自动检测风险</div></div>
+    </div>
+
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <div>场景速查与风险检测基于本地规则匹配，不能替代人工审核；描述生成功能调用 AI，结果仅供参考，执行破坏性命令前请务必确认</div>
+  <div><a href="/tools/">工具列表</a> · <a href="https://jotarou.com" target="_blank">jotarou.com</a> · © 2026 jotarou.com</div>
+</footer>
+
+<script>
+
+// ======= Escape =======
+function esc(s){
+  if(s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
+// ======= Theme =======
+function initTheme(){
+  const t = localStorage.getItem('gitcmd-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t==='dark' ? '☀️' : '🌙';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  const nxt = cur==='dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nxt);
+  localStorage.setItem('gitcmd-theme', nxt);
+  document.getElementById('themeBtn').textContent = nxt==='dark' ? '☀️' : '🌙';
+}
+
+// ======= Toast =======
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function debounce(fn, ms){
+  let t;
+  return function(...args){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), ms); };
+}
+
+// ======= Tabs =======
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.getElementById('panel-gen').classList.toggle('active', name==='gen');
+  document.getElementById('panel-lookup').classList.toggle('active', name==='lookup');
+  document.getElementById('panel-detect').classList.toggle('active', name==='detect');
+}
+
+// ======= API Key =======
+function initApiKey(){
+  const inp = document.getElementById('apiKey');
+  const saved = localStorage.getItem('gitcmd-apikey');
+  if(saved) inp.value = saved;
+  inp.addEventListener('change', ()=>{ localStorage.setItem('gitcmd-apikey', inp.value.trim()); syncKeyStatus(); });
+  inp.addEventListener('input', debounce(syncKeyStatus, 200));
+  syncKeyStatus();
+  document.addEventListener('click', (e)=>{
+    const pop = document.getElementById('keyPop');
+    const btn = document.getElementById('keyBtn');
+    if(pop.classList.contains('show') && !pop.contains(e.target) && e.target !== btn){
+      pop.classList.remove('show');
+    }
+  });
+}
+function toggleKeyVis(){
+  const inp = document.getElementById('apiKey');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function toggleKeyPop(){
+  document.getElementById('keyPop').classList.toggle('show');
+}
+function syncKeyStatus(){
+  const hasKey = document.getElementById('apiKey').value.trim().length > 0;
+  document.getElementById('keyBtn').classList.toggle('has-key', hasKey);
+  document.getElementById('keyMissingHint').classList.toggle('show', !hasKey);
+}
+// ===================================================================
+// ======= 风险检测引擎（已在Node环境跑过30个单测，逻辑原样迁移）=======
+// ===================================================================
+
+const RULES = [
+  {
+    id: 'push-force',
+    pattern: /\bgit\s+push\b(?:[^\n]*?)(\s--force(?!-with-lease)\b|\s-f\b)/,
+    baseLevel: 'warn',
+    dangerGroup: 1,
+    title: '强制推送 (--force / -f)',
+    explain: '会用本地分支历史无条件覆盖远程分支，若远程有其他人推送的提交，会被永久覆盖丢失。',
+    saferAlt: 'git push --force-with-lease',
+    saferExplain: '推送前会检查远程是否有你本地未知的新提交，如有则拒绝推送，避免覆盖他人工作。',
+    affectedBy: ['pushedRemote'],
+    escalateLevel: 'critical',
+    escalateNote: '由于你标记了该分支已推送远程，强制推送将导致团队其他人的提交被覆盖丢失！',
+  },
+  {
+    id: 'push-force-with-lease',
+    pattern: /\bgit\s+push\b(?:[^\n]*?)(--force-with-lease)/,
+    baseLevel: 'safe',
+    dangerGroup: 1,
+    title: '带保护的强制推送 (--force-with-lease)',
+    explain: '比 --force 更安全：推送前检查远程分支是否有你本地未拉取的新提交，如有则拒绝推送。',
+    saferAlt: null,
+    affectedBy: [],
+  },
+  {
+    id: 'reset-hard',
+    pattern: /\bgit\s+reset\b(?:[^\n]*?)(--hard\b)/,
+    baseLevel: 'warn',
+    dangerGroup: 1,
+    title: '强制回退 (--hard)',
+    explain: '会丢弃工作区和暂存区中所有未提交的修改，且不可恢复（除非记得 commit hash 可用 reflog 找回）。',
+    saferAlt: 'git reset --soft',
+    saferExplain: '只移动 HEAD 指针，保留工作区和暂存区的修改，更安全地撤销提交。',
+    affectedBy: ['hasUncommitted'],
+    escalateLevel: 'danger',
+    escalateNote: '由于你标记了工作区有未提交的临时代码，这些修改将被永久丢弃！',
+  },
+  {
+    id: 'clean-fd',
+    pattern: /\bgit\s+clean\b(?:[^\n]*?)(-[a-zA-Z]*f[a-zA-Z]*d[a-zA-Z]*|-[a-zA-Z]*d[a-zA-Z]*f[a-zA-Z]*)/,
+    baseLevel: 'warn',
+    dangerGroup: 1,
+    title: '强制清理未跟踪文件 (-fd)',
+    explain: '会删除所有未被 git 跟踪的文件和目录（包括你可能忘记 git add 的新文件），且不可恢复。',
+    saferAlt: 'git clean -fdn',
+    saferExplain: '加 -n（dry-run）参数先预览会被删除的文件列表，确认无误后再去掉 -n 执行。',
+    affectedBy: ['hasUncommitted'],
+    escalateLevel: 'danger',
+    escalateNote: '由于你标记了有未提交的临时代码，请确认这些文件已经 git add，否则会被直接删除！',
+  },
+  {
+    id: 'branch-D',
+    pattern: /\bgit\s+branch\b(?:[^\n]*?)(-D\b)/,
+    baseLevel: 'warn',
+    dangerGroup: 1,
+    title: '强制删除分支 (-D)',
+    explain: '强制删除分支，即使该分支有未合并到其他分支的提交，也会直接删除不提示。',
+    saferAlt: 'git branch -d',
+    saferExplain: '小写 -d 在分支有未合并提交时会拒绝删除并提示，更安全。',
+    affectedBy: [],
+  },
+  {
+    id: 'rebase',
+    pattern: /\bgit\s+(rebase)\b(?!\s+--abort)(?!\s+--continue)/,
+    baseLevel: 'warn',
+    dangerGroup: 1,
+    title: '变基 (rebase)',
+    explain: '会改写提交历史（生成新的 commit hash）。如果该分支已经推送给其他人，会导致协作者的本地历史与远程冲突。',
+    saferAlt: null,
+    affectedBy: ['pushedRemote'],
+    escalateLevel: 'critical',
+    escalateNote: '由于你标记了该分支已推送远程，改写历史将导致团队其他人代码冲突！',
+  },
+  {
+    id: 'commit-amend',
+    pattern: /\bgit\s+commit\b(?:[^\n]*?)(--amend\b)/,
+    baseLevel: 'warn',
+    dangerGroup: 1,
+    title: '修改最近一次提交 (--amend)',
+    explain: '会改写最近一次提交的内容和 hash。如果该提交已经推送，需要强制推送才能同步，影响协作者。',
+    saferAlt: null,
+    affectedBy: ['pushedRemote'],
+    escalateLevel: 'danger',
+    escalateNote: '由于你标记了该分支已推送远程，amend 后需要强制推送，请提前与协作者沟通。',
+  },
+  {
+    id: 'checkout-force',
+    pattern: /\bgit\s+checkout\b(?:[^\n]*?)(\s-f\b|\s--force\b)/,
+    baseLevel: 'warn',
+    dangerGroup: 1,
+    title: '强制切换分支 (--force)',
+    explain: '会丢弃当前工作区中与目标分支冲突的未提交修改。',
+    saferAlt: null,
+    affectedBy: ['hasUncommitted'],
+    escalateLevel: 'danger',
+    escalateNote: '由于你标记了有未提交的临时代码，切换分支时这些修改可能被丢弃！',
+  },
+];
+
+const COMPAT_BADGES = [
+  { pattern: /\bgit\s+switch\b/, badge: 'Git 2.23+' },
+  { pattern: /\bgit\s+restore\b/, badge: 'Git 2.23+' },
+  { pattern: /--force-with-lease\b/, badge: 'Git 1.8.5+' },
+];
+
+const LEVEL_RANK = { safe: 0, warn: 1, danger: 2, critical: 3 };
+const LEVEL_LABEL = { safe: '低风险', warn: '中风险', danger: '高风险', critical: '极危' };
+
+function detectRisks(cmdStr, contextFlags = {}){
+  const { pushedRemote = false, hasUncommitted = false } = contextFlags;
+  const results = [];
+
+  for(const rule of RULES){
+    const globalRegex = new RegExp(rule.pattern, 'g');
+    let m;
+    while((m = globalRegex.exec(cmdStr)) !== null){
+      const dangerToken = m[rule.dangerGroup];
+      let start = -1, end = -1;
+      if(dangerToken){
+        const matchedFull = m[0];
+        const relIdx = matchedFull.indexOf(dangerToken.trim());
+        if(relIdx >= 0){
+          start = m.index + relIdx;
+          end = start + dangerToken.trim().length;
+        }
+      }
+
+      let level = rule.baseLevel;
+      let escalated = false;
+      let activeNote = null;
+      if(rule.affectedBy && rule.affectedBy.length > 0){
+        const triggered = rule.affectedBy.some(flag => {
+          if(flag === 'pushedRemote') return pushedRemote;
+          if(flag === 'hasUncommitted') return hasUncommitted;
+          return false;
+        });
+        if(triggered && rule.escalateLevel){
+          level = rule.escalateLevel;
+          escalated = true;
+          activeNote = rule.escalateNote;
+        }
+      }
+
+      results.push({
+        id: rule.id, title: rule.title, explain: rule.explain, level, escalated,
+        escalateNote: activeNote, saferAlt: rule.saferAlt, saferExplain: rule.saferExplain,
+        tokenStart: start, tokenEnd: end, tokenText: start >= 0 ? cmdStr.slice(start, end) : null,
+      });
+
+      if (m[0].length === 0) {
+        globalRegex.lastIndex++;
+      }
+    }
+  }
+
+  const badges = [];
+  for(const cb of COMPAT_BADGES){
+    if(cb.pattern.test(cmdStr)) badges.push(cb.badge);
+  }
+
+  const overallLevel = results.reduce((acc, r) => LEVEL_RANK[r.level] > LEVEL_RANK[acc] ? r.level : acc, 'safe');
+  return { matches: results, overallLevel, badges };
+}
+
+// 渲染单条命令的token高亮(把危险参数包成<span>)
+function renderCmdWithHighlight(cmdStr, matches){
+  // 收集所有需要高亮的区间，按起点排序，避免重叠
+  const spans = matches.filter(m => m.tokenStart >= 0).map(m => ({start: m.tokenStart, end: m.tokenEnd}));
+  spans.sort((a,b) => a.start - b.start);
+  let out = '', cursor = 0;
+  for(const sp of spans){
+    if(sp.start < cursor) continue; // 跳过重叠
+    out += esc(cmdStr.slice(cursor, sp.start));
+    out += `<span class="danger-tok">${esc(cmdStr.slice(sp.start, sp.end))}</span>`;
+    cursor = sp.end;
+  }
+  out += esc(cmdStr.slice(cursor));
+  return out;
+}
+
+// ===================================================================
+// ======= 状态假设开关（Tab1生成区 + Tab3检测区共用同一套状态）=======
+// ===================================================================
+
+let ctxFlags = { pushedRemote: false, hasUncommitted: false };
+
+function renderCtxToggles(containerId, onChange){
+  const box = document.getElementById(containerId);
+  box.innerHTML = `
+    <label class="ctx-toggle-row">
+      <input type="checkbox" data-flag="pushedRemote" ${ctxFlags.pushedRemote?'checked':''}>
+      <span class="lbl">假设该分支<b>已经推送到远程</b>共享仓库（如 main / master）</span>
+    </label>
+    <label class="ctx-toggle-row">
+      <input type="checkbox" data-flag="hasUncommitted" ${ctxFlags.hasUncommitted?'checked':''}>
+      <span class="lbl">假设当前本地<b>工作区有未提交</b>的临时代码</span>
+    </label>
+  `;
+  box.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      ctxFlags[cb.dataset.flag] = cb.checked;
+      // 两个开关容器的勾选状态保持同步（同一份全局状态）
+      document.querySelectorAll(`input[data-flag="${cb.dataset.flag}"]`).forEach(other => { other.checked = cb.checked; });
+      onChange();
+    });
+  });
+}
+
+// ===================================================================
+// ======= Tab3: 风险检测器 =======
+// ===================================================================
+
+function handleDetectInput(){
+  const raw = document.getElementById('detectInput').value;
+  const box = document.getElementById('detectResultArea');
+  if(!raw.trim()){
+    box.innerHTML = '<div class="empty-hint">输入命令后自动检测风险</div>';
+    return;
+  }
+  const result = detectRisks(raw, ctxFlags);
+  if(result.matches.length === 0){
+    const badgesHtml = result.badges.length > 0 ? result.badges.map(b=>`<span class="compat-badge">${esc(b)}</span>`).join('') : '';
+    box.innerHTML = `
+      <div class="cmd-line">${esc(raw)}${badgesHtml}</div>
+      <div class="risk-badge risk-safe">低风险</div>
+      <div class="dialect-hint" style="margin-top:8px">未检测到本地规则库中收录的高危模式。注意：本工具仅能基于命令本身的文本模式判断，无法感知你的实际仓库状态，规则覆盖范围有限，不能替代对命令本身含义的理解。</div>
+    `;
+    return;
+  }
+
+  const cmdHtml = renderCmdWithHighlight(raw, result.matches);
+  const badgesHtml = result.badges.length > 0 ? result.badges.map(b=>`<span class="compat-badge">${esc(b)}</span>`).join('') : '';
+
+  let html = `<div class="cmd-line">${cmdHtml}${badgesHtml}</div>`;
+  html += `<div class="risk-badge risk-${result.overallLevel}" style="margin-bottom:10px">整体风险：${LEVEL_LABEL[result.overallLevel]}</div>`;
+
+  for(const m of result.matches){
+    html += `<div class="intent-card risk-${m.level}" style="margin-bottom:10px">
+      <div class="intent-card-head">
+        <div class="intent-card-title">${esc(m.title)}</div>
+        <span class="risk-badge risk-${m.level}">${LEVEL_LABEL[m.level]}</span>
+      </div>
+      <div class="intent-explain">${esc(m.explain)}</div>
+      ${m.escalated ? `<div class="escalate-note">⚠ ${esc(m.escalateNote)}</div>` : ''}
+      ${m.saferAlt ? `
+        <div class="safer-alt">
+          <b>更安全的替代：</b><code class="mono">${esc(m.saferAlt)}</code>
+          ${m.saferExplain ? `<div style="margin-top:4px;color:var(--tx-m)">${esc(m.saferExplain)}</div>` : ''}
+        </div>
+        <div class="intent-card-foot">
+          <button class="replace-btn" onclick="applySaferAlt('${esc(m.saferAlt)}')">一键替换为安全命令</button>
+        </div>
+      ` : ''}
+    </div>`;
+  }
+  box.innerHTML = html;
+}
+
+function applySaferAlt(altCmd){
+  document.getElementById('detectInput').value = altCmd;
+  handleDetectInput();
+  showToast('已替换为安全命令');
+}
+
+// ===================================================================
+// ======= Tab1: 描述生成（AI + 本地风险引擎兜底）=======
+// ===================================================================
+
+const SCENARIOS = [
+  {label:'合并最近几次commit', tpl:'把最近3次commit合并成一个'},
+  {label:'撤销commit保留修改', tpl:'撤销刚才的commit但保留修改'},
+  {label:'放弃所有本地修改', tpl:'放弃工作区所有未提交的修改，恢复到上次提交的状态'},
+  {label:'临时切换分支', tpl:'我有未提交的修改，但需要先切换到另一个分支处理紧急问题'},
+  {label:'同步远程并解决冲突', tpl:'拉取远程最新代码并合并到本地分支'},
+  {label:'自定义', tpl:''}
+];
+function renderScenarios(){
+  const box = document.getElementById('scenarioTags');
+  box.innerHTML = SCENARIOS.map((s,i)=>`<div class="tag" data-i="${i}">${esc(s.label)}</div>`).join('');
+  box.querySelectorAll('.tag').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      box.querySelectorAll('.tag').forEach(t=>t.classList.remove('active'));
+      el.classList.add('active');
+      const s = SCENARIOS[+el.dataset.i];
+      if(s.tpl) document.getElementById('descInput').value = s.tpl;
+      else document.getElementById('descInput').focus();
+    });
+  });
+}
+
+const GEN_SYSTEM_PROMPT = `你是一个Git命令生成助手。根据用户的中文描述，给出1-3个候选的git命令方案。
+如果用户的描述存在多种合理的实现方式（例如"撤销commit"可能对应reset --soft/reset --hard/revert三种完全不同的语义），必须把每种方式都作为独立候选列出，并清楚说明各自的适用场景和后果差异，不要只给一个答案。
+严格只返回如下JSON格式，不要任何多余文字、不要markdown代码块标记：
+{"candidates":[{"cmd":"完整的git命令","title":"6字以内概括这个方案的特点，如安全退回/强行抹除/反向提交","scenario":"15字以内说明这个方案的效果和适用场景"}]}
+最多给3个候选，最少给1个。命令必须是真实可执行的标准git命令。`;
+
+let lastGenResult = null; // [{cmd, title, scenario}]
+
+async function generateCommand(){
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if(!apiKey){ showToast('请先填写 API Key'); syncKeyStatus(); toggleKeyPop(); return; }
+  const desc = document.getElementById('descInput').value.trim();
+  if(!desc){ showToast('请先描述你的需求'); return; }
+
+  const genBtn = document.getElementById('genBtn');
+  genBtn.disabled = true;
+  document.getElementById('genStatus').textContent = '生成中...';
+  let streamRaw = '';
+
+  const userMsg = `需求描述: ${desc}`;
+  const chars = desc.length;
+  const model = chars <= 300 ? 'gpt-4o-mini' : 'deepseek-chat';
+
+  document.getElementById('genResultArea').innerHTML = `<div class="stream-box" id="genStreamBox">连接中...</div>`;
+
+  try{
+    const res = await fetch('https://jotarou.com/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 1000,
+        stream: true,
+        messages:[
+          {role:'system', content: GEN_SYSTEM_PROMPT},
+          {role:'user', content: userMsg}
+        ]
+      })
+    });
+    if(!res.ok){
+      let msg = '请求失败 ('+res.status+')';
+      try{ const d = await res.json(); msg = (d.error && d.error.message) || msg; }catch(e){}
+      throw new Error(msg);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      buf += decoder.decode(value, {stream:true});
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for(const line of lines){
+        const t = line.trim();
+        if(!t || t === 'data: [DONE]') continue;
+        if(t.startsWith('data: ')){
+          try{
+            const j = JSON.parse(t.slice(6));
+            const delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+            if(delta){
+              streamRaw += delta;
+              const sb = document.getElementById('genStreamBox');
+              if(sb) sb.textContent = streamRaw;
+            }
+          }catch(e){}
+        }
+      }
+    }
+
+    const parsed = parseJsonWithFallback(streamRaw);
+    if(parsed && Array.isArray(parsed.candidates) && parsed.candidates.length > 0){
+      lastGenResult = parsed.candidates;
+      renderGenResult();
+    } else {
+      document.getElementById('genResultArea').innerHTML = `<div class="dialect-hint">模型返回内容无法解析，原始输出如下：</div><div class="stream-box">${esc(streamRaw)}</div>`;
+    }
+  }catch(e){
+    document.getElementById('genResultArea').innerHTML = `<div class="err-hint">生成失败：${esc(e.message)}</div>`;
+  }
+  genBtn.disabled = false;
+  document.getElementById('genStatus').textContent = '';
+}
+
+function parseJsonWithFallback(raw){
+  if(!raw) return null;
+  let s = raw.trim();
+  s = s.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'');
+  try{ return JSON.parse(s); }catch(e){}
+  const m = s.match(/\{[\s\S]*\}/);
+  if(m){ try{ return JSON.parse(m[0]); }catch(e){} }
+  return null;
+}
+
+function copyCmdWithFeedback(btn, cmd){
+  navigator.clipboard.writeText(cmd).then(() => {
+    showToast('已复制');
+    const oldText = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    btn.style.borderColor = 'var(--ok)';
+    btn.style.color = 'var(--ok)';
+    setTimeout(() => {
+      btn.textContent = oldText;
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 1500);
+  });
+}
+
+// 关键防御设计：风险等级和高亮永远用本地规则引擎重新计算，不信任AI自报的等级
+// （AI可能误判风险，本地规则是确定性的、已经过测试验证）
+function renderGenResult(){
+  if(!lastGenResult || lastGenResult.length === 0){
+    document.getElementById('genResultArea').innerHTML = '<div class="empty-hint">描述你的需求并点击"生成命令"，AI 可能给出多个候选方案供你选择</div>';
+    return;
+  }
+
+  let html = `<div class="intent-cards">`;
+  for(const cand of lastGenResult){
+    const result = detectRisks(cand.cmd, ctxFlags); // 本地重新计算，不用AI的判断
+    const overallLevel = result.overallLevel;
+    const cmdHtml = renderCmdWithHighlight(cand.cmd, result.matches);
+    const badgesHtml = result.badges.length > 0 ? result.badges.map(b=>`<span class="compat-badge">${esc(b)}</span>`).join('') : '';
+
+    html += `<div class="intent-card risk-${overallLevel}">
+      <div class="intent-card-head">
+        <div class="intent-card-title">${esc(cand.title || '方案')}</div>
+        <span class="risk-badge risk-${overallLevel}">${LEVEL_LABEL[overallLevel]}</span>
+      </div>
+      <div class="cmd-line">${cmdHtml}${badgesHtml}</div>
+      <div class="intent-explain">${esc(cand.scenario || '')}</div>`;
+
+    for(const m of result.matches){
+      if(m.escalated){
+        html += `<div class="escalate-note">⚠ ${esc(m.escalateNote)}</div>`;
+      }
+      if(m.saferAlt){
+        html += `<div class="safer-alt"><b>更安全的替代：</b><code class="mono">${esc(m.saferAlt)}</code></div>`;
+      }
+    }
+
+    html += `<div class="intent-card-foot">
+      <button class="btn-copy" onclick="copyCmdWithFeedback(this, '${esc(cand.cmd)}')">复制此命令</button>
+    </div></div>`;
+  }
+  html += `</div>`;
+  document.getElementById('genResultArea').innerHTML = html;
+}
+
+// keywords: 用于模糊搜索匹配的中英文关键词，不引入完整拼音引擎，
+// 而是为每条预设场景手工标注高频搜索词（含同义词），命中即显示
+const SCENE_GROUPS = [
+  {
+    title: '撤销 / 回退',
+    items: [
+      {cmd:'git reset --soft HEAD~1', desc:'撤销最近1次提交，保留修改在暂存区（最安全的撤销方式）', level:'safe', keywords:['撤销','回退','撤回','soft','commit','reset','保留修改','撤销提交']},
+      {cmd:'git reset HEAD~1', desc:'撤销最近1次提交，保留修改但移出暂存区（mixed模式，reset默认行为）', level:'safe', keywords:['撤销','回退','reset','mixed','撤销提交']},
+      {cmd:'git reset --hard HEAD~1', desc:'彻底丢弃最近1次提交及其所有修改，不可恢复', level:'warn', keywords:['撤销','回退','彻底','丢弃','hard','reset','清空']},
+      {cmd:'git revert HEAD', desc:'用一个新提交抵消最近1次提交的改动，不改写历史，适合已推送的公共分支', level:'safe', keywords:['撤销','回退','revert','反向提交','公共分支','安全撤销']},
+      {cmd:'git checkout -- <file>', desc:'撤销某个文件在工作区的未提交修改，恢复到上次提交的状态', level:'warn', keywords:['撤销','还原','checkout','单文件','放弃修改']},
+      {cmd:'git restore <file>', desc:'撤销某个文件在工作区的未提交修改（checkout的现代替代写法）', level:'warn', keywords:['撤销','还原','restore','单文件','放弃修改'], compat:'Git 2.23+'},
+    ]
+  },
+  {
+    title: '分支管理',
+    items: [
+      {cmd:'git branch -d <branch>', desc:'删除分支，若有未合并的提交会拒绝删除并提示', level:'safe', keywords:['删除分支','branch','安全删除']},
+      {cmd:'git branch -D <branch>', desc:'强制删除分支，即使有未合并提交也直接删除', level:'warn', keywords:['删除分支','强制删除','branch','D']},
+      {cmd:'git switch -c <branch>', desc:'创建并切换到新分支（checkout -b的现代替代写法）', level:'safe', keywords:['新建分支','创建分支','切换分支','switch'], compat:'Git 2.23+'},
+      {cmd:'git checkout -b <branch>', desc:'创建并切换到新分支', level:'safe', keywords:['新建分支','创建分支','切换分支','checkout']},
+      {cmd:'git branch -m <old> <new>', desc:'重命名分支', level:'safe', keywords:['重命名分支','改名','branch','rename']},
+    ]
+  },
+  {
+    title: '远程同步',
+    items: [
+      {cmd:'git push --force-with-lease', desc:'带保护的强制推送，远程有新提交时会拒绝，比 --force 更安全', level:'safe', keywords:['强推','推送','push','force','安全强推']},
+      {cmd:'git push --force', desc:'无条件强制推送，会覆盖远程历史，可能导致他人提交丢失', level:'warn', keywords:['强推','推送','push','force','覆盖']},
+      {cmd:'git fetch && git log HEAD..origin/main', desc:'查看远程有哪些本地还没有的新提交，推送前先看看', level:'safe', keywords:['查看远程','fetch','对比','远程更新']},
+      {cmd:'git pull --rebase', desc:'拉取远程更新并以rebase方式合并，保持提交历史线性整洁', level:'warn', keywords:['拉取','pull','rebase','同步']},
+    ]
+  },
+  {
+    title: '历史修改',
+    items: [
+      {cmd:'git commit --amend', desc:'修改最近一次提交的内容或说明，会生成新的commit hash', level:'warn', keywords:['修改提交','amend','改提交信息','补充提交']},
+      {cmd:'git commit --amend --no-edit', desc:'给最近一次提交补充文件改动，但不修改提交说明', level:'warn', keywords:['补充提交','amend','不改说明']},
+      {cmd:'git rebase -i HEAD~3', desc:'交互式变基，可合并/调整/删除最近3次提交，常用于合并commit', level:'warn', keywords:['合并提交','rebase','交互式','squash','整理历史']},
+      {cmd:'git cherry-pick <commit-hash>', desc:'把某个特定提交单独应用到当前分支', level:'safe', keywords:['挑选提交','cherry-pick','单独应用']},
+    ]
+  },
+  {
+    title: '暂存区操作',
+    items: [
+      {cmd:'git stash', desc:'临时保存工作区的修改，恢复到上次提交的干净状态', level:'safe', keywords:['暂存','stash','临时保存','清空工作区']},
+      {cmd:'git stash pop', desc:'恢复最近一次stash保存的修改，并从stash列表删除', level:'safe', keywords:['恢复暂存','stash','pop','取回']},
+      {cmd:'git stash list', desc:'查看所有暂存记录', level:'safe', keywords:['查看暂存','stash','列表']},
+      {cmd:'git clean -fd', desc:'删除所有未被git跟踪的文件和目录，不可恢复', level:'warn', keywords:['清理','clean','删除未跟踪','fd']},
+      {cmd:'git clean -fdn', desc:'预览clean -fd会删除哪些文件，但不真正删除（dry-run）', level:'safe', keywords:['清理','clean','预览','dry-run','安全预览']},
+    ]
+  },
+];
+
+function matchesSearch(item, query){
+  if(!query) return true;
+  const q = query.toLowerCase().trim();
+  if(item.cmd.toLowerCase().includes(q)) return true;
+  if(item.desc.toLowerCase().includes(q)) return true;
+  return item.keywords.some(k => k.toLowerCase().includes(q));
+}
+
+function renderSceneGroups(query=''){
+  const box = document.getElementById('sceneGroups');
+  let html = '';
+  let totalVisible = 0;
+
+  for(const group of SCENE_GROUPS){
+    const visibleItems = group.items.filter(it => matchesSearch(it, query));
+    if(visibleItems.length === 0) continue;
+    totalVisible += visibleItems.length;
+
+    html += `<div class="scene-group"><div class="scene-group-title">${esc(group.title)}</div>`;
+    for(const it of visibleItems){
+      html += `<div class="scene-item">
+        <div class="cmd-line mono">${esc(it.cmd)}${it.compat ? `<span class="compat-badge">${esc(it.compat)}</span>` : ''}</div>
+        <div class="desc">${esc(it.desc)}</div>
+        <div class="scene-item-foot">
+          <span class="risk-badge risk-${it.level}">${LEVEL_LABEL[it.level]}</span>
+          <button class="btn-copy" onclick="copyCmdWithFeedback(this, '${esc(it.cmd)}')">复制</button>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  if(totalVisible === 0){
+    html = '<div class="empty-hint">没有找到匹配的场景，换个关键词试试</div>';
+  }
+  box.innerHTML = html;
+}
+
+// ===================================================================
+// ======= Init =======
+// ===================================================================
+function init(){
+  initTheme();
+  initApiKey();
+  renderScenarios();
+
+  // Tab1: 状态开关 + 生成结果联动重新渲染（开关变化时若已有生成结果，重新计算风险等级）
+  renderCtxToggles('ctxTogglesGen', () => { if(lastGenResult) renderGenResult(); });
+
+  // Tab2: 场景速查 + 模糊搜索
+  renderSceneGroups();
+  document.getElementById('sceneSearch').addEventListener('input', debounce((e)=>{
+    renderSceneGroups(e.target.value);
+  }, 80));
+
+  // Tab3: 风险检测 + 状态开关联动重新检测
+  renderCtxToggles('ctxTogglesDetect', () => { handleDetectInput(); });
+  document.getElementById('detectInput').addEventListener('input', debounce(handleDetectInput, 150));
+}
+init();
+
+</script>
+</body>
+</html>
